@@ -16,8 +16,8 @@ use syn::parse::{ParseStream, Parser};
 use syn::punctuated::Punctuated;
 use syn::{
     Abi, Attribute, Error, Expr, Fields, FnArg, ForeignItem, ForeignItemFn, ForeignItemType,
-    GenericArgument, GenericParam, Generics, Ident, ItemEnum, ItemImpl, ItemStruct, Lit, LitStr,
-    Pat, PathArguments, Result, ReturnType, Signature as RustSignature, Token, TraitBound,
+    GenericArgument, GenericParam, Generics, Ident, ItemEnum, ItemImpl, ItemStruct, ItemUse, Lit,
+    LitStr, Pat, PathArguments, Result, ReturnType, Signature as RustSignature, Token, TraitBound,
     TraitBoundModifier, Type as RustType, TypeArray, TypeBareFn, TypeParamBound, TypePath, TypePtr,
     TypeReference, Variant as RustVariant, Visibility,
 };
@@ -32,8 +32,9 @@ pub fn parse_items(
     items: Vec<Item>,
     trusted: bool,
     namespace: &Namespace,
-) -> Vec<Api> {
+) -> (Vec<Api>, Vec<ItemUse>) {
     let mut apis = Vec::new();
+    let mut other = Vec::new();
     for item in items {
         match item {
             Item::Struct(item) => match parse_struct(cx, item, namespace) {
@@ -49,11 +50,11 @@ pub fn parse_items(
                 Err(err) => cx.push(err),
             },
             // Item::Use(item) => cx.error(item, error::USE_NOT_ALLOWED),
-            Item::Use(_item) => {}
+            Item::Use(item) => other.push(item),
             Item::Other(item) => cx.error(item, "unsupported item"),
         }
     }
-    apis
+    (apis, other)
 }
 
 fn parse_struct(cx: &mut Errors, mut item: ItemStruct, namespace: &Namespace) -> Result<Api> {

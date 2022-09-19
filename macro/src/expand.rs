@@ -15,7 +15,7 @@ use crate::{derive, generics};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use std::mem;
-use syn::{parse_quote, punctuated, Generics, Lifetime, Result, Token};
+use syn::{parse_quote, punctuated, Generics, ItemUse, Lifetime, Result, Token};
 
 pub fn bridge(mut ffi: Module) -> Result<TokenStream> {
     let ref mut errors = Errors::new();
@@ -35,7 +35,7 @@ pub fn bridge(mut ffi: Module) -> Result<TokenStream> {
     let content = mem::take(&mut ffi.content);
     let trusted = ffi.unsafety.is_some();
     let namespace = &ffi.namespace;
-    let ref mut apis = syntax::parse_items(errors, content, trusted, namespace);
+    let (ref mut apis, ref other) = syntax::parse_items(errors, content, trusted, namespace);
     #[cfg(feature = "experimental-enum-variants-from-header")]
     crate::load::load(errors, apis);
     let ref types = Types::collect(errors, apis);
@@ -45,13 +45,24 @@ pub fn bridge(mut ffi: Module) -> Result<TokenStream> {
     check::typecheck(errors, apis, types, generator);
     errors.propagate()?;
 
-    Ok(expand(ffi, doc, attrs, apis, types))
+    Ok(expand(ffi, doc, attrs, apis, types, other))
 }
 
-fn expand(ffi: Module, doc: Doc, attrs: OtherAttrs, apis: &[Api], types: &Types) -> TokenStream {
+fn expand(
+    ffi: Module,
+    doc: Doc,
+    attrs: OtherAttrs,
+    apis: &[Api],
+    types: &Types,
+    others: &Vec<ItemUse>,
+) -> TokenStream {
     let mut expanded = TokenStream::new();
     let mut hidden = TokenStream::new();
     let mut forbid = TokenStream::new();
+
+    for other in others {
+        expanded.extend(other.to_token_stream());
+    }
 
     for api in apis {
         if let Api::RustType(ety) = api {

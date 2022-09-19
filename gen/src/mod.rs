@@ -149,12 +149,7 @@ pub(super) fn generate(syntax: File, opt: &Opt) -> Result<GeneratedCode> {
         if cfg::eval(errors, cfg_errors, opt.cfg_evaluator.as_ref(), &cfg) {
             let ref namespace = bridge.namespace;
             let trusted = bridge.unsafety.is_some();
-            apis.extend(syntax::parse_items(
-                errors,
-                bridge.content,
-                trusted,
-                namespace,
-            ));
+            apis.extend(syntax::parse_items(errors, bridge.content, trusted, namespace).0);
         }
     }
 
