@@ -48,7 +48,8 @@ pub fn parse_items(
                 Ok(imp) => apis.push(imp),
                 Err(err) => cx.push(err),
             },
-            Item::Use(item) => cx.error(item, error::USE_NOT_ALLOWED),
+            // Item::Use(item) => cx.error(item, error::USE_NOT_ALLOWED),
+            Item::Use(_item) => {}
             Item::Other(item) => cx.error(item, "unsupported item"),
         }
     }
