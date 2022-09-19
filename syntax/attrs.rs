@@ -186,6 +186,8 @@ pub fn parse(cx: &mut Errors, attrs: Vec<Attribute>, mut parser: Parser) -> Othe
         if !parser.ignore_unrecognized {
             cx.error(attr, "unsupported attribute");
             break;
+        } else {
+            passthrough_attrs.push(attr);
         }
     }
     OtherAttrs(passthrough_attrs)
